@@ -1,63 +1,157 @@
 # api_rbac_praktek
 
-To install dependencies:
+Project API sederhana untuk latihan authentication dan role-based access control (RBAC) menggunakan Bun, Express, Prisma, dan MySQL.
+
+## Menjalankan Project
+
+Install dependency:
 
 ```bash
 bun install
 ```
 
-To run:
+Buat file `.env` dari `.env.example`, lalu sesuaikan koneksi database:
+
+```env
+PORT=4000
+DATABASE_URL="mysql://root:password@localhost:3306/rbac"
+JWT_SECRET="ganti-dengan-secret-yang-aman"
+```
+
+Jalankan migrasi dan seed:
+
+```bash
+npx prisma migrate deploy
+bun prisma/seed.ts
+```
+
+Jalankan server:
 
 ```bash
 bun run index.ts
 ```
 
-This project was created using `bun init` in bun v1.3.8. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Server akan berjalan di:
 
+```text
+http://localhost:4000
+```
 
-endpoint untuk POSTMAN :
-Register
-POST http://localhost:4000/api/auth/register
+## Data Role
+
+Seed akan membuat 2 role:
+
+- `ADMIN`
+- `USER`
+
+Karena `roleId` bisa berbeda di setiap database, cek nilainya langsung dari database atau Prisma Studio:
+
+```bash
+npx prisma studio
+```
+
+Lalu lihat tabel `Role` dan ambil `id` untuk `ADMIN` atau `USER`.
+
+## Endpoint untuk Postman
+
+### 1. Register
+
+`POST http://localhost:4000/api/auth/register`
+
+Contoh body untuk user biasa:
+
+```json
 {
   "email": "user@mail.com",
   "password": "1234567",
-  "roleId": "580b3c75-164f-4a3d-9891-9063c472740a"
+  "roleId": "ISI_ROLE_ID_USER"
 }
+```
 
-Login:
-POST http://localhost:4000/api/auth/login
+Contoh body untuk admin:
+
+```json
+{
+  "email": "admin@mail.com",
+  "password": "1234567",
+  "roleId": "ISI_ROLE_ID_ADMIN"
+}
+```
+
+### 2. Login
+
+`POST http://localhost:4000/api/auth/login`
+
+```json
 {
   "email": "user@mail.com",
   "password": "1234567"
 }
-AUTH TOKEN :"bearer token" 
+```
 
-TESTING APAKAH BENAR USER ATAU ADMIN:
-GET http://localhost:4000/api/test
-tab Authorization :
-bearer token :
-output :
-{
-    "message": "Auth success",
-    "user": {
-        "id": "3cdbdd5e-c742-4f49-806b-6ddec133b9b4",
-        "role": "USER",
-        "iat": 1777437583,
-        "exp": 1777523983
-    }
-}
+Jika berhasil, response akan berisi token:
 
-cek permissioin admin atau user:
-GET http://localhost:4000/api/admin
-http://localhost:4000/api/admin
-tab Authorization :
-bearer token :
-admin:
+```json
 {
-    "message": "Welcome Admin"
+  "token": "bearer_token"
 }
-user:
-{
-    "message": "No access"
-}
+```
 
+### 3. Test Authentication
+
+`GET http://localhost:4000/api/test`
+
+Di Postman:
+
+- buka tab `Authorization`
+- pilih `Bearer Token`
+- isi dengan token dari endpoint login
+
+Contoh response:
+
+```json
+{
+  "message": "Auth success",
+  "user": {
+    "id": "user-id",
+    "role": "USER",
+    "iat": 1778300294,
+    "exp": 1778386694
+  }
+}
+```
+
+### 4. Test RBAC Admin
+
+`GET http://localhost:4000/api/admin`
+
+Pakai token dari login.
+
+Jika token milik admin:
+
+```json
+{
+  "message": "Welcome Admin"
+}
+```
+
+Jika token milik user biasa:
+
+```json
+{
+  "message": "No access"
+}
+```
+
+## Ringkasan Alur Test
+
+1. Jalankan database MySQL.
+2. Isi `.env`.
+3. Jalankan `npx prisma migrate deploy`.
+4. Jalankan `bun prisma/seed.ts`.
+5. Jalankan `bun run index.ts`.
+6. Ambil `roleId` dari tabel `Role`.
+7. Register user atau admin.
+8. Login untuk mendapatkan token.
+9. Test `/api/test`.
+10. Test `/api/admin`.
